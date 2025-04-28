@@ -53,7 +53,7 @@ def extract_resume_info(pdf_file) -> dict:
 
 def create_streamlit_app(llm, clean_text_fn):
     st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📧")
-    st.title("📧 Cold Connect")
+    st.title("📧 Rapid Reachout: Cold Email Generator")
     st.markdown("""
     <style>
     body {
