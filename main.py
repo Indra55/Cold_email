@@ -6,23 +6,27 @@ import re
 import spacy
 from chain import Chain
 from utils import clean_text
-from spacy.cli import download
 
-try:
-    nlp = spacy.load("en_core_web_sm")
-except OSError:
-    from spacy.cli import download
-    download("en_core_web_sm")
-    nlp = spacy.load("en_core_web_sm")
+# --- Corrected: Safe loading of spacy model ---
+def load_spacy_model():
+    try:
+        return spacy.load("en_core_web_sm")
+    except OSError:
+        from spacy.cli import download
+        download("en_core_web_sm")
+        return spacy.load("en_core_web_sm")
+
+nlp = load_spacy_model()
 
 # Extract information from uploaded PDF resumes
 def extract_resume_info(pdf_file):
-    nlp = spacy.load("en_core_web_sm")
     pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file.read()))
     text = ""
     for page in pdf_reader.pages:
-        text += page.extract_text()
-    
+        page_text = page.extract_text()
+        if page_text:
+            text += page_text
+
     doc = nlp(text)
     info = {"name": "", "email": "", "skills": [], "experience": []}
 
@@ -33,13 +37,13 @@ def extract_resume_info(pdf_file):
         if ent.label_ == "PERSON":
             info["name"] = ent.text
             break
-    
+
     # Extract email using regex
     email_pattern = r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
     emails = re.findall(email_pattern, text)
     if emails:
         info["email"] = emails[0]
-    
+
     # Identify skills
     common_skills = [
         "Python", "Java", "JavaScript", "TypeScript", "C", "C++", "HTML", "CSS", "SQL",
@@ -137,6 +141,5 @@ def create_streamlit_app(llm, clean_text):
 
 # Entry point
 if __name__ == "__main__":
-    from chain import Chain
     chain = Chain()
     create_streamlit_app(chain, clean_text)
