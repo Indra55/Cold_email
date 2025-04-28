@@ -5,6 +5,14 @@ import io
 import re
 from chain import Chain
 from utils import clean_text
+from textblob import TextBlob
+
+def extract_name(text):
+    blob = TextBlob(text)
+    candidates = blob.noun_phrases
+    if candidates:
+        return candidates[0].title()
+    return "Name not found"
 
 
 

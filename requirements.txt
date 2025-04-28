@@ -4,3 +4,4 @@ langchain_groq
 langchain_core
 PyPDF2
 chromadb
+textblob
