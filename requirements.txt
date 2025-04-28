@@ -5,3 +5,4 @@ langchain_core
 PyPDF2
 chromadb
 textblob
+beautifulsoup4
