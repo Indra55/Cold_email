@@ -12,11 +12,19 @@ def load_spacy_model():
     try:
         return spacy.load("en_core_web_sm")
     except OSError:
-        from spacy.cli import download
-        download("en_core_web_sm")
-        return spacy.load("en_core_web_sm")
+        st.error("""
+        Error: Could not load the spaCy language model.
+        Please run the following command with appropriate permissions:
+        python -m spacy download en_core_web_sm
+        """)
+        raise Exception("SpaCy model not found and could not be downloaded automatically. Please install it manually.")
 
-nlp = load_spacy_model()
+# Initialize spacy model at startup
+try:
+    nlp = load_spacy_model()
+except Exception as e:
+    st.error(str(e))
+    nlp = None
 
 # Extract information from uploaded PDF resumes
 def extract_resume_info(pdf_file):
