@@ -3,30 +3,11 @@ from langchain_community.document_loaders import WebBaseLoader
 import PyPDF2
 import io
 import re
-import spacy
 from chain import Chain
 from utils import clean_text
 
-# --- Corrected: Safe loading of spacy model ---
-def load_spacy_model():
-    try:
-        return spacy.load("en_core_web_sm")
-    except OSError:
-        st.error("""
-        Error: Could not load the spaCy language model.
-        Please run the following command with appropriate permissions:
-        python -m spacy download en_core_web_sm
-        """)
-        raise Exception("SpaCy model not found and could not be downloaded automatically. Please install it manually.")
 
-# Initialize spacy model at startup
-try:
-    nlp = load_spacy_model()
-except Exception as e:
-    st.error(str(e))
-    nlp = None
 
-# Extract information from uploaded PDF resumes
 def extract_resume_info(pdf_file):
     pdf_reader = PyPDF2.PdfReader(io.BytesIO(pdf_file.read()))
     text = ""
@@ -35,24 +16,15 @@ def extract_resume_info(pdf_file):
         if page_text:
             text += page_text
 
-    doc = nlp(text)
     info = {"name": "", "email": "", "skills": [], "experience": []}
 
-    # Extract name from the contact section
-    contact_section = text[:500]
-    doc_contact = nlp(contact_section)
-    for ent in doc_contact.ents:
-        if ent.label_ == "PERSON":
-            info["name"] = ent.text
-            break
+    info["name"] = extract_name(text)
 
-    # Extract email using regex
     email_pattern = r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}'
     emails = re.findall(email_pattern, text)
     if emails:
         info["email"] = emails[0]
 
-    # Identify skills
     common_skills = [
         "Python", "Java", "JavaScript", "TypeScript", "C", "C++", "HTML", "CSS", "SQL",
         "React", "Node.js", "Express", "Flask", "Flutter", "NumPy", "Pandas", 
@@ -63,7 +35,6 @@ def extract_resume_info(pdf_file):
     text_lower = text.lower()
     info["skills"] = [skill for skill in common_skills if skill.lower() in text_lower]
 
-    # Extract experience information
     experience_pattern = r"(\d+)\s*(year|yr|yrs)\s*(?:at|with)\s*([A-Za-z\s]+)"
     experience_matches = re.findall(experience_pattern, text, re.IGNORECASE)
     if experience_matches:
@@ -73,9 +44,7 @@ def extract_resume_info(pdf_file):
 
     return info
 
-# Main Streamlit app
 def create_streamlit_app(llm, clean_text):
-    # Page title and layout
     st.set_page_config(layout="wide", page_title="Cold Email Generator", page_icon="📧")
     st.title("📧 Cold Connect")
     st.markdown("""
@@ -99,7 +68,6 @@ def create_streamlit_app(llm, clean_text):
         </style>
     """, unsafe_allow_html=True)
 
-    # Input fields
     st.header("Your Details")
     with st.form("input_form"):
         col1, col2 = st.columns(2)
@@ -114,7 +82,6 @@ def create_streamlit_app(llm, clean_text):
         job_url = st.text_input("Job URL", placeholder="Paste the job URL here")
         submit_button = st.form_submit_button("Generate Email")
 
-    # Process resume and generate email
     if submit_button:
         if not (name and email and company and designation):
             st.error("Please fill in all required fields")
@@ -147,7 +114,7 @@ def create_streamlit_app(llm, clean_text):
                 except Exception as e:
                     st.error(f"An error occurred: {e}")
 
-# Entry point
 if __name__ == "__main__":
+    from chain import Chain
     chain = Chain()
     create_streamlit_app(chain, clean_text)
